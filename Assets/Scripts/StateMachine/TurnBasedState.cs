@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PieceTypes;
 
 [RequireComponent(typeof(TurnBasedSM))]
 public class TurnBasedState : State
