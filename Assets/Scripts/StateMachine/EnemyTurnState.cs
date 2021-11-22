@@ -11,7 +11,6 @@ public class EnemyTurnState : TurnBasedState
     [SerializeField] float _pauseDuration = 1.5f;
     [SerializeField] GameObject _enemyPiece;
 
-    bool firstTurn = true;
 
     GameObject tempPiece = null;
 
@@ -46,13 +45,9 @@ public class EnemyTurnState : TurnBasedState
 
         Debug.Log("Enemy performs action");
 
-        if(firstTurn)
-        {
-            StartCoroutine(TakeMove(tempPiece));
-        }
 
+        StartCoroutine(TakeMove(tempPiece));
         EnemyTurnEnded?.Invoke();
-
         StateMachine.ChangeState<PlayerTurnState>();
     }
 
@@ -60,15 +55,15 @@ public class EnemyTurnState : TurnBasedState
     {
         Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        /*List<int> moves = CalculateMoves();
+        List<int> moves = CalculateMoves();
 
         if (moves.Count > 0)
         {
-            int column = moves[Random.Range(0, moves.Count)];
+            int column = moves[UnityEngine.Random.Range(0, moves.Count)];
 
             spawnPos = new Vector3(column, 0, 0);
         }
-        */
+
         GameObject g = Instantiate(
                 _enemyPiece, 
                 new Vector3(
@@ -85,7 +80,7 @@ public class EnemyTurnState : TurnBasedState
         Vector3 endPosition = new Vector3();
 
         // round to a grid cell
-        int x = Mathf.RoundToInt(3);
+        int x = Mathf.RoundToInt(startPosition.x);
         startPosition = new Vector3(x, startPosition.y, startPosition.z);
 
         // is there a free cell in the selected column?
@@ -104,7 +99,6 @@ public class EnemyTurnState : TurnBasedState
 
         if (foundFreeCell)
         {
-            firstTurn = false;
             // Instantiate a new Piece, disable the temporary
             GameObject g = Instantiate(pieceMoving) as GameObject;
             tempPiece.GetComponent<Renderer>().enabled = false;
@@ -132,6 +126,23 @@ public class EnemyTurnState : TurnBasedState
             }
             yield return 0;
         }
+    }
+
+    public List<int> CalculateMoves()
+    {
+        List<int> possibleMoves = new List<int>();
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 7 - 1; y >= 0; y--)
+            {
+                if (SetupState.Board[x, y] == (int)PieceTypes.Piece.Empty)
+                {
+                    possibleMoves.Add(x);
+                    break;
+                }
+            }
+        }
+        return possibleMoves;
     }
 
     void OnPressedWin()
