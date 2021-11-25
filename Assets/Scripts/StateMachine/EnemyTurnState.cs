@@ -8,6 +8,8 @@ public class EnemyTurnState : TurnBasedState
     public static event Action EnemyTurnBegan;
     public static event Action EnemyTurnEnded;
 
+    PositionAnalysis _analyizer;
+
     [SerializeField] float _pauseDuration = 1.5f;
     [SerializeField] GameObject _enemyPiece;
 
@@ -19,7 +21,6 @@ public class EnemyTurnState : TurnBasedState
         Debug.Log("Enemy turn:... Enter");
         EnemyTurnBegan?.Invoke();
 
-        StateMachine.Input.PressedWin += OnPressedWin;
         StateMachine.Input.PressedLose += OnPressedLose;
 
 
@@ -33,7 +34,6 @@ public class EnemyTurnState : TurnBasedState
 
     public override void Exit()
     {
-        StateMachine.Input.PressedWin -= OnPressedWin;
         StateMachine.Input.PressedLose -= OnPressedLose;
         Debug.Log("Enemy Turn: Exit....");
     }
@@ -120,9 +120,10 @@ public class EnemyTurnState : TurnBasedState
             DestroyImmediate(tempPiece);
 
             bool win = false;
+            win = CheckWin(2, SetupState.Board);
             if (win)
             {
-                OnPressedWin();
+                OnPressedLose();
             }
             yield return 0;
         }
@@ -145,9 +146,57 @@ public class EnemyTurnState : TurnBasedState
         return possibleMoves;
     }
 
-    void OnPressedWin()
+    bool CheckWin(int playerVal, int[,] arr)
     {
-        StateMachine.ChangeState<WinState>();
+        //Horizontal win check
+        for (int i = 0; i < 8 - 3; i++)
+        {
+            for (int j = 0; j < 7; j++)
+            {
+                if (arr[i, j] == playerVal && arr[i + 1, j] == playerVal && arr[i + 2, j] == playerVal && arr[i + 3, j] == playerVal)
+                {
+                    return true;
+                }
+            }
+        }
+
+        //Vertical win check
+        for (int i = 0; i < 8; i++)
+        {
+            for (int j = 0; j < 7 - 3; j++)
+            {
+                if (arr[i, j] == playerVal && arr[i, j + 1] == playerVal && arr[i, j + 2] == playerVal && arr[i, j + 3] == playerVal)
+                {
+                    return true;
+                }
+            }
+        }
+
+        //Diagonal / win check
+        for (int i = 3; i < 8; i++)
+        {
+            for (int j = 0; j < 7 - 3; j++)
+            {
+                if (arr[i, j] == playerVal && arr[i - 1, j + 1] == playerVal && arr[i - 2, j + 2] == playerVal && arr[i - 3, j + 3] == playerVal)
+                {
+                    return true;
+                }
+            }
+        }
+
+        //Diagonal \ win check
+        // descendingDiagonalCheck
+        for (int i = 3; i < 8; i++)
+        {
+            for (int j = 3; j < 7; j++)
+            {
+                if (arr[i, j] == playerVal && arr[i - 1, j - 1] == playerVal && arr[i - 2, j - 2] == playerVal && arr[i - 3, j - 3] == playerVal)
+                    return true;
+            }
+        }
+
+
+        return false;
     }
 
     void OnPressedLose()
