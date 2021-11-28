@@ -8,8 +8,6 @@ public class EnemyTurnState : TurnBasedState
     public static event Action EnemyTurnBegan;
     public static event Action EnemyTurnEnded;
 
-    PositionAnalysis _analyizer;
-
     [SerializeField] float _pauseDuration = 1.5f;
     [SerializeField] GameObject _enemyPiece;
 
@@ -79,8 +77,9 @@ public class EnemyTurnState : TurnBasedState
         Vector3 startPosition = pieceMoving.transform.position;
         Vector3 endPosition = new Vector3();
 
+        int x = Evaluate(SetupState.Board);
+
         // round to a grid cell
-        int x = Mathf.RoundToInt(startPosition.x);
         startPosition = new Vector3(x, startPosition.y, startPosition.z);
 
         // is there a free cell in the selected column?
@@ -198,6 +197,146 @@ public class EnemyTurnState : TurnBasedState
 
         return false;
     }
+
+
+    public int Evaluate(int[,] board)
+    {
+        int x = 0;
+        bool iterator = true;
+        while (iterator)
+        {
+            bool canWin = false;
+            bool canBlockWin = false;
+            bool canConnectThree = false;
+            bool canConnectTwo = false;
+
+            if (canWin == false)
+            {
+                //Horizantal win check
+                for (int i = 0; i < 8 - 3; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 0 && board[i + 3, j - 1] != 0)
+                        {
+                            x = i + 3;
+                            return x;
+                        }
+                    }
+                }
+
+                //Vertical win check
+                for (int i = 0; i < 8; i++)
+                {
+                    for (int j = 0; j < 7 - 3; j++)
+                    {
+                        if (board[i, j] == 2 && board[i, j + 1] == 2 && board[i, j + 2] == 2 && board[i, j + 3] == 0)
+                        {
+                            Debug.Log("Choose win!");
+                            x = i;
+                            return x;
+                        }
+                    }
+                }
+
+                //Diagonal / win check
+                for (int i = 3; i < 8; i++)
+                {
+                    for (int j = 0; j < 7 - 3; j++)
+                    {
+                        if (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 0 && board[i - 3, j + 2] != 0)
+                        {
+                            x = i - 3;
+                            break;
+                        }
+                    }
+                }
+
+                //Diagonal \ win check
+                // descendingDiagonalCheck
+                for (int i = 3; i < 8; i++)
+                {
+                    for (int j = 3; j < 7; j++)
+                    {
+                        if (board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0)
+                        {
+                            x = i - 3;
+                            return x;
+                        }
+                    }
+                }
+                canWin = true;
+            }
+
+            if (canBlockWin == false)
+            {
+                //Horizantal win check
+                for (int i = 0; i < 8 - 3; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 0 && board[i + 3, j - 1] != 0)
+                        {
+                            Debug.Log("BLOCK");
+                            x = i + 3;
+                            return x;
+                        }
+                    }
+                }
+
+                //Vertical win check
+                for (int i = 0; i < 8; i++)
+                {
+                    for (int j = 0; j < 7 - 3; j++)
+                    {
+                        if (board[i, j] == 1 && board[i, j + 1] == 1 && board[i, j + 2] == 1 && board[i, j + 3] == 0)
+                        {
+                            Debug.Log("BLOCK!");
+                            x = i;
+                            return x;
+                        }
+                    }
+                }
+
+                //Diagonal / win check
+                for (int i = 3; i < 8; i++)
+                {
+                    for (int j = 0; j < 7 - 3; j++)
+                    {
+                        if (board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0 && board[i - 3, j + 2] != 0)
+                        {
+                            x = i - 3;
+                            return x;
+                        }
+                    }
+                }
+
+                //Diagonal \ win check
+                // descendingDiagonalCheck
+                for (int i = 3; i < 8; i++)
+                {
+                    for (int j = 3; j < 7; j++)
+                    {
+                        if (board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0)
+                        {
+                            x = i - 3;
+                            return x;
+                        }
+                        
+                    }
+                }
+                canBlockWin = true;
+            }
+            if (canBlockWin && canWin)
+            {
+                x = UnityEngine.Random.Range(0, 7);
+                return x;
+            }
+            iterator = false;
+        }
+        return x;
+    }
+
 
     void OnPressedLose()
     {

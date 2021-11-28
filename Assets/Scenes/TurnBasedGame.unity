@@ -2468,6 +2468,7 @@ GameObject:
   - component: {fileID: 2102601566}
   - component: {fileID: 2102601565}
   - component: {fileID: 2102601564}
+  - component: {fileID: 2102601570}
   m_Layer: 0
   m_Name: StateController
   m_TagString: Untagged
@@ -2570,6 +2571,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _input: {fileID: 1204510385}
+--- !u!114 &2102601570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2102601562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16fe013646b806742b60e61067c06ba9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2137066964
 GameObject:
   m_ObjectHideFlags: 0
