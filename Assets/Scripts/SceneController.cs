@@ -8,11 +8,13 @@ public class SceneController : MonoBehaviour
     //test
     public void LoadMenu()
     {
+        Time.timeScale = 1;
         SceneManager.LoadScene("MainMenu");
     }
 
     public void LoadGame()
     {
+        Time.timeScale = 1;
         SceneManager.LoadScene("TurnBasedGame");
     }
 

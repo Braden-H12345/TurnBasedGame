@@ -11,10 +11,12 @@ public class WinState : TurnBasedState
     {
         Debug.Log("WinState: ...Entering");
         _winStatePanel.SetActive(true);
+        Time.timeScale = 0;
     }
 
     public override void Exit()
     {
         Debug.Log("Winstate: Exiting...");
+        Time.timeScale = 1;
     }
 }
