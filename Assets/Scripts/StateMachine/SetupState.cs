@@ -9,36 +9,34 @@ public class SetupState : TurnBasedState
     [SerializeField] public GameObject squareField;
 
     bool _activated = false;
-    static int[,] boardArray;
+    static int[,] _boardArray;
 
     public static int[,] Board
     {
-        get => boardArray; 
+        get => _boardArray; 
     }
 
-    public static GameObject boardObjectParent;
+    public static GameObject _boardObjectParent;
     public override void Enter()
     {
-        Debug.Log("Setup: ... Entering");
-        Debug.Log("Creating " + _numPlayers + " players");
 
 
-        boardObjectParent = GameObject.Find("Board");
-        if (boardObjectParent != null)
+        _boardObjectParent = GameObject.Find("Board");
+        if (_boardObjectParent != null)
         {
-            DestroyImmediate(boardObjectParent);
+            DestroyImmediate(_boardObjectParent);
         }
-        boardObjectParent = new GameObject("Board");
+        _boardObjectParent = new GameObject("Board");
 
         // create an empty field and instantiate the cells
-        boardArray = new int[8, 7];
+        _boardArray = new int[8, 7];
         for (int x = 0; x < 8; x++)
         {
             for (int y = 0; y < 7; y++)
             {
-                boardArray[x, y] = (int)PieceTypes.Piece.Empty;
-                GameObject g = Instantiate(squareField, new Vector3(x, y * -1, -1), Quaternion.identity) as GameObject;
-                g.transform.parent = boardObjectParent.transform;
+                _boardArray[x, y] = (int)PieceTypes.Piece.Empty;
+                GameObject _boardGameObject = Instantiate(squareField, new Vector3(x, y * -1, -1), Quaternion.identity);
+                _boardGameObject.transform.parent = _boardObjectParent.transform;
             }
         }
 
@@ -62,6 +60,6 @@ public class SetupState : TurnBasedState
 
     public override void Exit()
     {
-        Debug.Log("Setup: Exiting...");
+
     }
 }

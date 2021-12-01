@@ -5,13 +5,9 @@ using UnityEngine.UI;
 
 public class PlayerTurnState : TurnBasedState
 {
-    [SerializeField] Text _playerTurnTextUI = null;
 
     [SerializeField] GameObject _playerPiece;
 
-    int _playerTurnCount = 0;
-
-    int _count = 0;
     bool turnComplete = false;
 
     GameObject tempPiece = null;
@@ -19,13 +15,6 @@ public class PlayerTurnState : TurnBasedState
     public override void Enter()
     {
         turnComplete = false;
-        _playerTurnTextUI.gameObject.SetActive(true);
-
-
-        _playerTurnCount++;
-        _playerTurnTextUI.text = "Player turn: " + _playerTurnCount.ToString();
-
-
         StateMachine.Input.PressedWin += OnPressedWin;
         StateMachine.Input.PressedLose += OnPressedLose;
 
@@ -37,25 +26,34 @@ public class PlayerTurnState : TurnBasedState
 
     public override void Tick()
     {
-        // update the objects position
-        Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        tempPiece.transform.position = new Vector3(Mathf.Clamp(pos.x, 0f, 8 - 1f), 1, 0);
+        List<int> moves = CalculateMoves();
 
-        // click the left mouse button to drop the piece into the selected column
-        if (Input.GetMouseButtonDown(0))
+        if (moves.Count == 0)
         {
-            StartCoroutine(TakeMove(tempPiece));
+            StateMachine.ChangeState<LoseState>();
         }
 
-        if(turnComplete)
+        // update the objects position
+        if (Time.timeScale == 1)
         {
-            StateMachine.ChangeState<EnemyTurnState>();
+            Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            tempPiece.transform.position = new Vector3(Mathf.Clamp(pos.x, 0f, 8 - 1f), 1, 0);
+
+            // click the left mouse button to drop the piece into the selected column
+            if (Input.GetMouseButtonDown(0))
+            {
+                StartCoroutine(TakeMove(tempPiece));
+            }
+
+            if (turnComplete)
+            {
+                StateMachine.ChangeState<EnemyTurnState>();
+            }
         }
     }
 
     public override void Exit()
     {
-        _playerTurnTextUI.gameObject.SetActive(false);
 
 
         StateMachine.Input.PressedWin -= OnPressedWin;
@@ -72,9 +70,6 @@ public class PlayerTurnState : TurnBasedState
     {
         StateMachine.ChangeState<LoseState>();
     }
-
-
-
 
     GameObject Spawner()
     {
@@ -131,7 +126,7 @@ public class PlayerTurnState : TurnBasedState
                 yield return null;
             }
 
-            g.transform.parent = SetupState.boardObjectParent.transform;
+            g.transform.parent = SetupState._boardObjectParent.transform;
 
             // remove the temporary gameobject
             DestroyImmediate(tempPiece);
@@ -197,5 +192,22 @@ public class PlayerTurnState : TurnBasedState
 
 
         return false;
+    }
+
+    public List<int> CalculateMoves()
+    {
+        List<int> possibleMoves = new List<int>();
+        for (int x = 0; x < 8; x++)
+        {
+            for (int y = 7 - 1; y >= 0; y--)
+            {
+                if (SetupState.Board[x, y] == (int)PieceTypes.Piece.Empty)
+                {
+                    possibleMoves.Add(x);
+                    break;
+                }
+            }
+        }
+        return possibleMoves;
     }
 }

@@ -47,8 +47,7 @@ public class EnemyTurnState : TurnBasedState
 
     GameObject Spawner()
     {
-        Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
+        Vector3 _spawnPos = new Vector3(0,0,0);
 
         int column = Evaluate(SetupState.Board);
 
@@ -58,28 +57,27 @@ public class EnemyTurnState : TurnBasedState
         }
         else
         {
-            spawnPos = new Vector3(column, 0, 0);
+            _spawnPos = new Vector3(column, 0, 0);
         }
 
-        GameObject g = Instantiate(
-                _enemyPiece, 
+        GameObject tempObj = Instantiate(
+                _enemyPiece,
                 new Vector3(
-                Mathf.Clamp(spawnPos.x, 0, 8 - 1),
-                1, 0), // spawn it above the first row
-                Quaternion.identity) as GameObject;
+                Mathf.Clamp(_spawnPos.x, 0, 8 - 1),
+                1, 0), Quaternion.identity);
 
-        return g;
+        return tempObj;
     }
 
-    IEnumerator TakeMove(GameObject pieceMoving)
+    IEnumerator TakeMove(GameObject _pieceToMove)
     {
-        Vector3 startPosition = pieceMoving.transform.position;
-        Vector3 endPosition = new Vector3();
+        Vector3 _startPosition = _pieceToMove.transform.position;
+        Vector3 _endPosition = new Vector3();
 
-        int x = Mathf.RoundToInt(startPosition.x);
+        int x = Mathf.RoundToInt(_startPosition.x);
 
         // round to a grid cell
-        startPosition = new Vector3(x, startPosition.y, startPosition.z);
+        _startPosition = new Vector3(x, _startPosition.y, _startPosition.z);
 
         // is there a free cell in the selected column?
         bool foundFreeCell = false;
@@ -89,7 +87,7 @@ public class EnemyTurnState : TurnBasedState
             {
                 foundFreeCell = true;
                 SetupState.Board[x, i] = (int)PieceTypes.Piece.AI;
-                endPosition = new Vector3(x, i * -1, startPosition.z);
+                _endPosition = new Vector3(x, i * -1, _startPosition.z);
 
                 break;
             }
@@ -98,21 +96,21 @@ public class EnemyTurnState : TurnBasedState
         if (foundFreeCell)
         {
             // Instantiate a new Piece, disable the temporary
-            GameObject g = Instantiate(pieceMoving) as GameObject;
+            GameObject _piece = Instantiate(_pieceToMove);
             tempPiece.GetComponent<Renderer>().enabled = false;
 
-            float distance = Vector3.Distance(startPosition, endPosition);
+            float distance = Vector3.Distance(_startPosition, _endPosition);
 
             float t = 0;
             while (t < 1)
             {
                 t += Time.deltaTime * 2 * ((7 - distance) + 1);
 
-                g.transform.position = Vector3.Lerp(startPosition, endPosition, t);
+                _piece.transform.position = Vector3.Lerp(_startPosition, _endPosition, t);
                 yield return null;
             }
 
-            g.transform.parent = SetupState.boardObjectParent.transform;
+            _piece.transform.parent = SetupState._boardObjectParent.transform;
 
             // remove the temporary gameobject
             DestroyImmediate(tempPiece);
@@ -402,25 +400,21 @@ public class EnemyTurnState : TurnBasedState
                             if ((j == 3 && board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0)
                                 || (board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0 && board[i - 3, j + 4] != 0))
                             {
-                                Debug.Log("Blocked diag 4");
                                 x = i - 3;
                                 return x;
                             }
                             else if ((board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 0 && board[i - 3, j + 3] == 1 && board[i - 2, j + 3] != 0))
                             {
-                                Debug.Log("Blocked diag 3");
                                 x = i - 2;
                                 return x;
                             }
                             else if ((board[i, j] == 1 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1 && board[i - 1, j + 2] != 0))
                             {
-                                Debug.Log("Blocked diag 2");
                                 x = i - 1;
                                 return x;
                             }
                             else if ((board[i, j] == 0 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1 && board[i, j + 1] != 0))
                             {
-                                Debug.Log("Blocked diag 1");
                                 x = i;
                                 return x;
                             }
@@ -443,8 +437,8 @@ public class EnemyTurnState : TurnBasedState
                                 x = i - 3;
                                 return x;
                             }
-                            else if ((j == 7 && board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1)
-                                || (board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1))
+                            else if ((j == 6 && board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1)
+                                || (board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1 && board[i, j + 1] != 0))
                             {
                                 return i;
                             }
@@ -465,6 +459,43 @@ public class EnemyTurnState : TurnBasedState
                 canBlockWin = true;
             }
 
+            //simply to allow for the bot to not instantly lose in the event the player manages to get 3 in a row on first column at start
+            if (blockThreeHorizontal == false)
+            {
+                for (int i = 0; i < 8 - 2; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if ((board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1))
+                        {
+                            if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1)
+                                || (board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i, j + 1] != 0))
+                            {
+
+                                x = i;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1)
+                                || (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 1, j + 1] != 0))
+                            {
+
+                                x = i + 1;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0)
+                                || (board[i, j] == 1 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 2, j + 1] != 0))
+                            {
+
+                                x = i + 2;
+                                return x;
+                            }
+                        }
+                    }
+                }
+                blockThreeHorizontal = true;
+            }
 
             if (canConnectThree == false)
             {
@@ -586,43 +617,7 @@ public class EnemyTurnState : TurnBasedState
                 canConnectThree = true;
             }
 
-            //simply to allow for the bot to not instantly lose in the event the player manages to get 3 in a row on first column at start
-            if (blockThreeHorizontal == false)
-            {
-                for (int i = 0; i < 8 - 2; i++)
-                {
-                    for (int j = 0; j < 7; j++)
-                    {
-                        if ((board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1) ||
-                            (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0) ||
-                            (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1))
-                        {
-                            if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1)
-                                || (board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i, j + 1] != 0))
-                            {
-                                
-                                x = i;
-                                return x;
-                            }
-                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1)
-                                || (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 1, j + 1] != 0))
-                            {
-                                
-                                x = i + 1;
-                                return x;
-                            }
-                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0)
-                                || (board[i, j] == 1 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 2, j + 1] != 0))
-                            {
-                                
-                                x = i + 2;
-                                return x;
-                            }
-                        }
-                    }
-                }
-                blockThreeHorizontal = true;
-            }
+            
             if (canBlockWin && canWin && canConnectThree && blockThreeHorizontal)
             {
                 List<int> moves = CalculateMoves();
