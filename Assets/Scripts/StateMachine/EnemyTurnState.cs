@@ -587,12 +587,11 @@ public class EnemyTurnState : TurnBasedState
             }
 
             //simply to allow for the bot to not instantly lose in the event the player manages to get 3 in a row on first column at start
-            //only checks first column for that reason
             if (blockThreeHorizontal == false)
             {
                 for (int i = 0; i < 8 - 2; i++)
                 {
-                    for (int j = 6; j < 7; j++)
+                    for (int j = 0; j < 7; j++)
                     {
                         if ((board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1) ||
                             (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0) ||
