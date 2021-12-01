@@ -12,7 +12,7 @@ public class EnemyTurnState : TurnBasedState
     [SerializeField] GameObject _enemyPiece;
     [SerializeField] AudioClip _pieceDropSound;
 
-    GameObject tempPiece = null;
+    GameObject _tempPiece = null;
 
     public override void Enter()
     {
@@ -21,9 +21,9 @@ public class EnemyTurnState : TurnBasedState
         StateMachine.Input.PressedLose += OnPressedLose;
 
 
-        if (tempPiece == null)
+        if (_tempPiece == null)
         {
-            tempPiece = Spawner();
+            _tempPiece = Spawner();
         }
 
         StartCoroutine(EnemyThinkingRoutine(_pauseDuration));
@@ -40,7 +40,7 @@ public class EnemyTurnState : TurnBasedState
 
 
 
-        StartCoroutine(TakeMove(tempPiece));
+        StartCoroutine(TakeMove(_tempPiece));
         EnemyTurnEnded?.Invoke();
         StateMachine.ChangeState<PlayerTurnState>();
     }
@@ -60,13 +60,13 @@ public class EnemyTurnState : TurnBasedState
             _spawnPos = new Vector3(column, 0, 0);
         }
 
-        GameObject tempObj = Instantiate(
+        GameObject _tempObj = Instantiate(
                 _enemyPiece,
                 new Vector3(
                 Mathf.Clamp(_spawnPos.x, 0, 8 - 1),
                 1, 0), Quaternion.identity);
 
-        return tempObj;
+        return _tempObj;
     }
 
     IEnumerator TakeMove(GameObject _pieceToMove)
@@ -74,47 +74,44 @@ public class EnemyTurnState : TurnBasedState
         Vector3 _startPosition = _pieceToMove.transform.position;
         Vector3 _endPosition = new Vector3();
 
-        int x = Mathf.RoundToInt(_startPosition.x);
+        int column = Mathf.RoundToInt(_startPosition.x);
 
-        // round to a grid cell
-        _startPosition = new Vector3(x, _startPosition.y, _startPosition.z);
+        _startPosition = new Vector3(column, _startPosition.y, _startPosition.z);
 
-        // is there a free cell in the selected column?
-        bool foundFreeCell = false;
-        for (int i = 7 - 1; i >= 0; i--)
-        {
-            if (SetupState.Board[x, i] == 0)
+
+            //gets to the lowest free cell in that column
+             for (int row = 7 - 1; row >= 0; row--)
             {
-                foundFreeCell = true;
-                SetupState.Board[x, i] = (int)PieceTypes.Piece.AI;
-                _endPosition = new Vector3(x, i * -1, _startPosition.z);
-
-                break;
+                if (SetupState.Board[column, row] == 0)
+                {
+                    SetupState.Board[column, row] = (int)PieceTypes.Piece.AI;
+                    _endPosition = new Vector3(column, row * -1, _startPosition.z);
+                    break;
+                }
             }
-        }
 
-        if (foundFreeCell)
-        {
+
             Feedback();
-            // Instantiate a new Piece, disable the temporary
+
+
             GameObject _piece = Instantiate(_pieceToMove);
-            tempPiece.GetComponent<Renderer>().enabled = false;
+            _tempPiece.GetComponent<Renderer>().enabled = false;
 
-            float distance = Vector3.Distance(_startPosition, _endPosition);
+            float _dropDistance = Vector3.Distance(_startPosition, _endPosition);
 
-            float t = 0;
-            while (t < 1)
+            float _dropTime = 0;
+            while (_dropTime < 1)
             {
-                t += Time.deltaTime * 2 * ((7 - distance) + 1);
+                _dropTime += Time.deltaTime * 2 * ((7 - _dropDistance) + 1);
 
-                _piece.transform.position = Vector3.Lerp(_startPosition, _endPosition, t);
+                _piece.transform.position = Vector3.Lerp(_startPosition, _endPosition, _dropTime);
                 yield return null;
             }
 
             _piece.transform.parent = SetupState._boardObjectParent.transform;
 
-            // remove the temporary gameobject
-            DestroyImmediate(tempPiece);
+            // remove temp piece
+            DestroyImmediate(_tempPiece);
 
             bool win = CheckWin(2, SetupState.Board);
             if (win)
@@ -122,7 +119,7 @@ public class EnemyTurnState : TurnBasedState
                 OnPressedLose();
             }
             yield return 0;
-        }
+        
     }
 
     public List<int> CalculateMoves()
@@ -205,6 +202,11 @@ public class EnemyTurnState : TurnBasedState
     }
 
 
+
+    //this function acts as a priority system of moves
+    //it navigates through multiple if statements to determine which move to take
+    //the if statements are in the following order (simulating priority)
+    // Win -> Block win -> Connect 3 pieces - > block horizontal connection of 3 (fringe case)-> Random move if none of those
     public int Evaluate(int[,] board)
     {
         int x = 0;
@@ -216,6 +218,9 @@ public class EnemyTurnState : TurnBasedState
             bool canConnectThree = false;
             bool blockThreeHorizontal = false;
 
+            //this checks if the AI can win on this turn.
+            //if it can it returns that column number so that it can play it
+            //otherwise it continues to the next check
             if (canWin == false)
             {
                 //Horizantal win check
@@ -340,6 +345,10 @@ public class EnemyTurnState : TurnBasedState
                 canWin = true;
             }
 
+
+            //this checks if the AI can block the player from winning on this turn.
+            //if it can it returns that column number so that it can play it
+            //otherwise it continues to the next check
             if (canBlockWin == false)
             {
                 //Horizantal block check
@@ -468,6 +477,8 @@ public class EnemyTurnState : TurnBasedState
                 canBlockWin = true;
             }
 
+
+            //this is a fringe check but simply is there to not allow the player to instantly win in the first few moves
             //simply to allow for the bot to not instantly lose in the event the player manages to get 3 in a row on first column at start
             if (blockThreeHorizontal == false)
             {
@@ -506,6 +517,10 @@ public class EnemyTurnState : TurnBasedState
                 blockThreeHorizontal = true;
             }
 
+
+            //this checks if the AI can connect 3 pieces on this turn.
+            //if it can it returns that column number so that it can play it
+            //otherwise it continues to the next check
             if (canConnectThree == false)
             {
                 
@@ -626,7 +641,7 @@ public class EnemyTurnState : TurnBasedState
                 canConnectThree = true;
             }
 
-            
+            //after checking everything it will play randomly if no other prioritized moves are valid
             if (canBlockWin && canWin && canConnectThree && blockThreeHorizontal)
             {
                 List<int> moves = CalculateMoves();

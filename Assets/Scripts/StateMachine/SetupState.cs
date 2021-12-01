@@ -19,16 +19,8 @@ public class SetupState : TurnBasedState
     public static GameObject _boardObjectParent;
     public override void Enter()
     {
-
-
-        _boardObjectParent = GameObject.Find("Board");
-        if (_boardObjectParent != null)
-        {
-            DestroyImmediate(_boardObjectParent);
-        }
         _boardObjectParent = new GameObject("Board");
 
-        // create an empty field and instantiate the cells
         _boardArray = new int[8, 7];
         for (int x = 0; x < 8; x++)
         {

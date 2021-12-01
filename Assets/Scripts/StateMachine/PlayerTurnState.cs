@@ -29,18 +29,19 @@ public class PlayerTurnState : TurnBasedState
     {
         List<int> moves = CalculateMoves();
 
+        //draw checking
         if (moves.Count == 0)
         {
             StateMachine.ChangeState<LoseState>();
         }
 
-        // update the objects position
+        
         if (Time.timeScale == 1)
         {
             Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             tempPiece.transform.position = new Vector3(Mathf.Clamp(pos.x, 0f, 8 - 1f), 1, 0);
 
-            // click the left mouse button to drop the piece into the selected column
+            
             if (Input.GetMouseButtonDown(0))
             {
                 Feedback();
@@ -75,62 +76,59 @@ public class PlayerTurnState : TurnBasedState
 
     GameObject Spawner()
     {
-        Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 _spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        GameObject g = Instantiate(
-                _playerPiece, // is players turn = spawn blue, else spawn red
-                new Vector3(
-                Mathf.Clamp(spawnPos.x, 0, 8 - 1),
-                1, 0), // spawn it above the first row
-                Quaternion.identity) as GameObject;
+        GameObject _piece = Instantiate( _playerPiece, new Vector3
+            (Mathf.Clamp(_spawnPos.x, 0, 8 - 1),1, 0),Quaternion.identity);
 
-        return g;
+        return _piece;
     }
 
-    IEnumerator TakeMove(GameObject pieceMoving)
+    IEnumerator TakeMove(GameObject _pieceToUse)
     {
-        Vector3 startPosition = pieceMoving.transform.position;
-        Vector3 endPosition = new Vector3();
+        Vector3 _startPosition = _pieceToUse.transform.position;
+        Vector3 _endPosition = new Vector3();
 
         // round to a grid cell
-        int x = Mathf.RoundToInt(startPosition.x);
-        startPosition = new Vector3(x, startPosition.y, startPosition.z);
+        int x = Mathf.RoundToInt(_startPosition.x);
+        _startPosition = new Vector3(x, _startPosition.y, _startPosition.z);
 
-        // is there a free cell in the selected column?
-        bool foundFreeCell = false;
+        bool _isColumnLegal = false;
+
+        //gets first empty space on the column. making sure it is legal before attempting to complete move
         for (int i = 7 - 1; i >= 0; i--)
         {
             if (SetupState.Board[x, i] == 0)
             {
-                foundFreeCell = true;
+                _isColumnLegal = true;
                 SetupState.Board[x, i] = (int)PieceTypes.Piece.Player;
-                endPosition = new Vector3(x, i * -1, startPosition.z);
+                _endPosition = new Vector3(x, i * -1, _startPosition.z);
 
                 break;
             }
         }
 
-        if (foundFreeCell)
+        if (_isColumnLegal)
         {
             turnComplete = true;
-            // Instantiate a new Piece, disable the temporary
-            GameObject g = Instantiate(pieceMoving) as GameObject;
+
+
+            GameObject _pieceBeingPlayed = Instantiate(_pieceToUse);
             tempPiece.GetComponent<Renderer>().enabled = false;
 
-            float distance = Vector3.Distance(startPosition, endPosition);
+            float distance = Vector3.Distance(_startPosition, _endPosition);
 
-            float t = 0;
-            while (t < 1)
+            float _dropTime = 0;
+            while (_dropTime < 1)
             {
-                t += Time.deltaTime * 2 * ((7 - distance) + 1);
+                _dropTime += Time.deltaTime * 2 * ((7 - distance) + 1);
 
-                g.transform.position = Vector3.Lerp(startPosition, endPosition, t);
+                _pieceBeingPlayed.transform.position = Vector3.Lerp(_startPosition, _endPosition, _dropTime);
                 yield return null;
             }
 
-            g.transform.parent = SetupState._boardObjectParent.transform;
+            _pieceBeingPlayed.transform.parent = SetupState._boardObjectParent.transform;
 
-            // remove the temporary gameobject
             DestroyImmediate(tempPiece);
 
             bool win = CheckWin(1, SetupState.Board);
@@ -142,6 +140,7 @@ public class PlayerTurnState : TurnBasedState
         }
     }
 
+    //checks if the player has won
     bool CheckWin(int playerVal, int[,] arr)
     {
         //Horizontal win check
@@ -204,6 +203,7 @@ public class PlayerTurnState : TurnBasedState
         }
     }
 
+    //used to determine if a draw must be given. if it finds no moves then the game will draw (player loses)
     public List<int> CalculateMoves()
     {
         List<int> possibleMoves = new List<int>();
