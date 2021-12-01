@@ -236,8 +236,8 @@ public class EnemyTurnState : TurnBasedState
                             (board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2 && board[i + 3, j] == 2) ||
                             (board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 2))
                         {
-                            //for the horizontal ones, it requires two checks. if j = 6 and otherwise.
-                            //this is because it must check if the place below where it wants to play is not empty so the AI does not attempt to win
+                            //for all checks it requires atleast one check where a certain grid is not empty
+                            //this is because it must check if the grid below where it wants to play is not empty so the AI does not attempt to win
                             //when it would not win
                             //visual example
                             /*
@@ -246,7 +246,8 @@ public class EnemyTurnState : TurnBasedState
                              *    B B B B
                              *  B R R R B B
                              */
-                            //so if j = 6 there would be an IndexOutofBounds exception
+                            //for the horizontal check, it requires two checks. if j = 6 and otherwise.
+                            //this is because if j = 6 there would be an IndexOutofBounds exception
                             //to circumvent this there are two checks seperated by an OR conditional
                             //all other checks in this function are similar where they will either have two cases like below or simply one
                             //based on the index and type of move
