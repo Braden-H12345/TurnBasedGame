@@ -16,7 +16,6 @@ public class EnemyTurnState : TurnBasedState
 
     public override void Enter()
     {
-        Debug.Log("Enemy turn:... Enter");
         EnemyTurnBegan?.Invoke();
 
         StateMachine.Input.PressedLose += OnPressedLose;
@@ -33,15 +32,12 @@ public class EnemyTurnState : TurnBasedState
     public override void Exit()
     {
         StateMachine.Input.PressedLose -= OnPressedLose;
-        Debug.Log("Enemy Turn: Exit....");
     }
 
     IEnumerator EnemyThinkingRoutine(float pauseDuration)
     {
-        Debug.Log("Enemy thinking...");
         yield return new WaitForSeconds(pauseDuration);
 
-        Debug.Log("Enemy performs action");
 
 
         StartCoroutine(TakeMove(tempPiece));
@@ -53,12 +49,15 @@ public class EnemyTurnState : TurnBasedState
     {
         Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        List<int> moves = CalculateMoves();
 
-        if (moves.Count > 0)
+        int column = Evaluate(SetupState.Board);
+
+        if(column == -1)
         {
-            int column = moves[UnityEngine.Random.Range(0, moves.Count)];
-
+            StateMachine.ChangeState<LoseState>();
+        }
+        else
+        {
             spawnPos = new Vector3(column, 0, 0);
         }
 
@@ -77,7 +76,7 @@ public class EnemyTurnState : TurnBasedState
         Vector3 startPosition = pieceMoving.transform.position;
         Vector3 endPosition = new Vector3();
 
-        int x = Evaluate(SetupState.Board);
+        int x = Mathf.RoundToInt(startPosition.x);
 
         // round to a grid cell
         startPosition = new Vector3(x, startPosition.y, startPosition.z);
@@ -208,7 +207,7 @@ public class EnemyTurnState : TurnBasedState
             bool canWin = false;
             bool canBlockWin = false;
             bool canConnectThree = false;
-            bool canConnectTwo = false;
+            bool blockThreeHorizontal = false;
 
             if (canWin == false)
             {
@@ -217,10 +216,36 @@ public class EnemyTurnState : TurnBasedState
                 {
                     for (int j = 0; j < 7; j++)
                     {
-                        if (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 0 && board[i + 3, j - 1] != 0)
+                        if ((board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 0) ||
+                            (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 3, j] == 2) ||
+                            (board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2 && board[i + 3, j] == 2) ||
+                            (board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 2))
                         {
-                            x = i + 3;
-                            return x;
+                            if ((j == 6 && board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 0)
+                                || (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 0 && board[i + 3, j + 1] != 0))
+                            {
+                                x = i + 3;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 2)
+                                || (board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i + 3, j] == 2 && board[i, j + 1] != 0))
+                            {
+                                x = i;
+                                return x;
+
+                            }
+                            else if ((j == 6 && board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 3, j] == 2)
+                                || (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 3, j] == 2 && board[i + 2, j + 1] != 0))
+                            {
+                                x = i + 2;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2 && board[i + 3, j] == 2)
+                                || (board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2 && board[i + 3, j] == 2 && board[i + 1, j + 1] != 0))
+                            {
+                                x = i + 1;
+                                return x;
+                            }
                         }
                     }
                 }
@@ -230,9 +255,8 @@ public class EnemyTurnState : TurnBasedState
                 {
                     for (int j = 0; j < 7 - 3; j++)
                     {
-                        if (board[i, j] == 2 && board[i, j + 1] == 2 && board[i, j + 2] == 2 && board[i, j + 3] == 0)
+                        if (board[i, j] == 0 && board[i, j + 1] == 2 && board[i, j + 2] == 2 && board[i, j + 3] == 2)
                         {
-                            Debug.Log("Choose win!");
                             x = i;
                             return x;
                         }
@@ -244,24 +268,65 @@ public class EnemyTurnState : TurnBasedState
                 {
                     for (int j = 0; j < 7 - 3; j++)
                     {
-                        if (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 0 && board[i - 3, j + 2] != 0)
+                        if ((board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 0) ||
+                            (board[i, j] == 0 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 0 && board[i - 3, j + 3] == 2))
                         {
-                            x = i - 3;
-                            break;
+                            if ((j == 3 && board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 0)
+                                || (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 0 && board[i - 3, j + 4] != 0))
+                            {
+                                x = i - 3;
+                                return x;
+                            }
+                            else if ((board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 0 && board[i - 3, j + 3] == 2 && board[i - 2, j + 3] != 0))
+                            {
+                                x = i - 2;
+                                return x;
+                            }
+                            else if ((board[i, j] == 2 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 2 && board[i - 1, j + 2] != 0))
+                            {
+                                x = i - 1;
+                                return x;
+                            }
+                            else if ((board[i, j] == 0 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i - 3, j + 3] == 2 && board[i, j + 1] != 0))
+                            {
+                                x = i;
+                                return x;
+                            }
                         }
                     }
                 }
 
                 //Diagonal \ win check
-                // descendingDiagonalCheck
                 for (int i = 3; i < 8; i++)
                 {
                     for (int j = 3; j < 7; j++)
                     {
-                        if (board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0)
+                        if ((board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 0) ||
+                            (board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 0 && board[i - 3, j - 3] == 2))
                         {
-                            x = i - 3;
-                            return x;
+                            if ((board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0))
+                            {
+                                x = i - 3;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 2) || (board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 2))
+                            {
+                                return i;
+                            }
+                            else if ((board[i, j] == 2 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 2 && board[i - 3, j - 3] == 2 && board[i - 3, j] != 0))
+                            {
+                                x = i - 1;
+                                return x;
+                            }
+                            else if ((board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 0 && board[i - 3, j - 3] == 2 && board[i - 3, j - 1] != 0))
+                            {
+                                x = i - 2;
+                                return x;
+                            }
                         }
                     }
                 }
@@ -270,67 +335,309 @@ public class EnemyTurnState : TurnBasedState
 
             if (canBlockWin == false)
             {
-                //Horizantal win check
+                //Horizantal block check
                 for (int i = 0; i < 8 - 3; i++)
                 {
                     for (int j = 0; j < 7; j++)
                     {
-                        if (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 0 && board[i + 3, j - 1] != 0)
+
+                        if ((board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 0) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0 && board[i + 3, j] == 1) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 3, j] == 1) ||
+                            (board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 1))
                         {
-                            Debug.Log("BLOCK");
-                            x = i + 3;
-                            return x;
+                            if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 0)
+                                || (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 0 && board[i + 3, j + 1] != 0))
+                            {
+                                x = i + 3;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 1)
+                                || (board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i + 3, j] == 1 && board[i, j + 1] != 0))
+                            {
+                                x = i;
+                                return x;
+
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0 && board[i + 3, j] == 1)
+                                || (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0 && board[i + 3, j] == 1 && board[i + 2, j + 1] != 0))
+                            {
+                                x = i + 2;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 3, j] == 1)
+                                || (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 3, j] == 1 && board[i + 1, j + 1] != 0))
+                            {
+                                x = i + 1;
+                                return x;
+                            }
                         }
                     }
                 }
 
-                //Vertical win check
+                //Vertical block check
                 for (int i = 0; i < 8; i++)
                 {
                     for (int j = 0; j < 7 - 3; j++)
                     {
-                        if (board[i, j] == 1 && board[i, j + 1] == 1 && board[i, j + 2] == 1 && board[i, j + 3] == 0)
+                        if ((board[i, j] == 0 && board[i, j + 1] == 1 && board[i, j + 2] == 1 && board[i, j + 3] == 1))
                         {
-                            Debug.Log("BLOCK!");
+                            
                             x = i;
                             return x;
                         }
                     }
                 }
 
-                //Diagonal / win check
+                //Diagonal / block check
                 for (int i = 3; i < 8; i++)
                 {
                     for (int j = 0; j < 7 - 3; j++)
                     {
-                        if (board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0 && board[i - 3, j + 2] != 0)
+                        if ((board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0) ||
+                            (board[i, j] == 0 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1) ||
+                            (board[i, j] == 1 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1) ||
+                            (board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 0 && board[i - 3, j + 3] == 1))
                         {
-                            x = i - 3;
+                            if ((j == 3 && board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0)
+                                || (board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 0 && board[i - 3, j + 4] != 0))
+                            {
+                                Debug.Log("Blocked diag 4");
+                                x = i - 3;
+                                return x;
+                            }
+                            else if ((board[i, j] == 1 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 0 && board[i - 3, j + 3] == 1 && board[i - 2, j + 3] != 0))
+                            {
+                                Debug.Log("Blocked diag 3");
+                                x = i - 2;
+                                return x;
+                            }
+                            else if ((board[i, j] == 1 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1 && board[i - 1, j + 2] != 0))
+                            {
+                                Debug.Log("Blocked diag 2");
+                                x = i - 1;
+                                return x;
+                            }
+                            else if ((board[i, j] == 0 && board[i - 1, j + 1] == 1 && board[i - 2, j + 2] == 1 && board[i - 3, j + 3] == 1 && board[i, j + 1] != 0))
+                            {
+                                Debug.Log("Blocked diag 1");
+                                x = i;
+                                return x;
+                            }
+                        }
+                    }
+                }
+
+                //Diagonal \ block check
+                for (int i = 3; i < 8; i++)
+                {
+                    for (int j = 3; j < 7; j++)
+                    {
+                        if ((board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 0) ||
+                            (board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1) ||
+                            (board[i, j] == 1 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1) ||
+                            (board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 0 && board[i - 3, j - 3] == 1))
+                        {
+                            if ((board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0))
+                            {
+                                x = i - 3;
+                                return x;
+                            }
+                            else if ((j == 7 && board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1)
+                                || (board[i, j] == 0 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1))
+                            {
+                                return i;
+                            }
+                            else if ((board[i, j] == 1 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 1 && board[i - 3, j] != 0))
+                            {
+                                x = i - 1;
+                                return x;
+                            }
+                            else if ((board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 0 && board[i - 3, j - 3] == 1 && board[i - 3, j - 1] != 0))
+                            {
+                                x = i - 2;
+                                return x;
+                            }
+                        }
+
+                    }
+                }
+                canBlockWin = true;
+            }
+
+
+            if (canConnectThree == false)
+            {
+                
+
+                //Vertical connect check
+                for (int i = 0; i < 8; i++)
+                {
+                    for (int j = 0; j < 7 - 2; j++)
+                    {
+                        if (board[i, j] == 0 && board[i, j + 1] == 2 && board[i, j + 2] == 2)
+                        {
+                            
+                            x = i;
                             return x;
                         }
                     }
                 }
 
-                //Diagonal \ win check
-                // descendingDiagonalCheck
-                for (int i = 3; i < 8; i++)
+                //Diagonal / connect check
+                for (int i = 2; i < 8; i++)
                 {
-                    for (int j = 3; j < 7; j++)
+                    for (int j = 0; j < 7 - 2; j++)
                     {
-                        if (board[i, j] == 1 && board[i - 1, j - 1] == 1 && board[i - 2, j - 2] == 1 && board[i - 3, j - 3] == 0 && board[i - 3, j - 2] != 0)
+                        if ((board[i, j] == 0 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 2)||
+                            (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 0))
                         {
-                            x = i - 3;
-                            return x;
+                            if((j == 4 && board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 0) 
+                                || (board[i, j] == 2 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 0 && board[i - 2, j + 3] != 0))
+                            {
+                                
+                                x = i - 2;
+                                return x;
+                            }
+                            else if((board[i, j] == 2 && board[i - 1, j + 1] == 0 && board[i - 2, j + 2] == 2 && board[i - 1, j + 2] != 0))
+                            {
+                                
+                                x = i - 1;
+                                return x;
+                            }
+                            else if ((board[i, j] == 0 && board[i - 1, j + 1] == 2 && board[i - 2, j + 2] == 2 && board[i, j + 1] != 0))
+                            {
+                                
+                                x = i;
+                                return x;
+                            }
                         }
-                        
                     }
                 }
-                canBlockWin = true;
+
+                //Diagonal \ connect check
+                for (int i = 2; i < 8; i++)
+                {
+                    for (int j = 2; j < 7; j++)
+                    {
+                        if ((board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 2) ||
+                            (board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 0))
+                        {
+                            if((j == 6 && board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2) 
+                                || (board[i, j] == 0 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 2 && board[i, j +1] != 0))
+                            {
+                                
+                                x = i;
+                                return x;
+                            }
+                            else if((board[i, j] == 2 && board[i - 1, j - 1] == 0 && board[i - 2, j - 2] == 2 && board[i-1, j] != 0))
+                            {
+                                
+                                x = i - 1;
+                                return x;
+                            }
+                            else if((board[i, j] == 2 && board[i - 1, j - 1] == 2 && board[i - 2, j - 2] == 0 && board[i-2, j-1] != 0))
+                            {
+                                
+                                x = i - 2;
+                                return x;
+                            }
+                        }
+                    }
+                }
+
+                //Horizantal connect check, this at end as there are some cases where connecting can be detrimental 
+                //yet it will anyways (such as on edge of board when 4 is not possible)
+                //this ensures that more cases are checked first
+                for (int i = 0; i < 8 - 2; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if ((board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2) ||
+                            (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0) ||
+                            (board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2))
+                        {
+                            if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2)
+                                || (board[i, j] == 0 && board[i + 1, j] == 2 && board[i + 2, j] == 2 && board[i, j + 1] != 0))
+                            {
+                                
+                                x = i;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2)
+                                || (board[i, j] == 2 && board[i + 1, j] == 0 && board[i + 2, j] == 2 && board[i + 1, j + 1] != 0))
+                            {
+                                
+                                x = i + 1;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0)
+                                || (board[i, j] == 2 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 2, j + 1] != 0))
+                            {
+                                
+                                x = i + 2;
+                                return x;
+                            }
+                        }
+                    }
+                }
+                canConnectThree = true;
             }
-            if (canBlockWin && canWin)
+
+            //simply to allow for the bot to not instantly lose in the event the player manages to get 3 in a row on first column at start
+            //only checks first column for that reason
+            if (blockThreeHorizontal == false)
             {
-                x = UnityEngine.Random.Range(0, 7);
-                return x;
+                for (int i = 0; i < 8 - 2; i++)
+                {
+                    for (int j = 6; j < 7; j++)
+                    {
+                        if ((board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0) ||
+                            (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1))
+                        {
+                            if ((j == 6 && board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1)
+                                || (board[i, j] == 0 && board[i + 1, j] == 1 && board[i + 2, j] == 1 && board[i, j + 1] != 0))
+                            {
+                                
+                                x = i;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1)
+                                || (board[i, j] == 1 && board[i + 1, j] == 0 && board[i + 2, j] == 1 && board[i + 1, j + 1] != 0))
+                            {
+                                
+                                x = i + 1;
+                                return x;
+                            }
+                            else if ((j == 6 && board[i, j] == 1 && board[i + 1, j] == 1 && board[i + 2, j] == 0)
+                                || (board[i, j] == 1 && board[i + 1, j] == 2 && board[i + 2, j] == 0 && board[i + 2, j + 1] != 0))
+                            {
+                                
+                                x = i + 2;
+                                return x;
+                            }
+                        }
+                    }
+                }
+                blockThreeHorizontal = true;
+            }
+            if (canBlockWin && canWin && canConnectThree && blockThreeHorizontal)
+            {
+                List<int> moves = CalculateMoves();
+                if (moves.Count > 0)
+                {
+                    x = moves[UnityEngine.Random.Range(0, moves.Count)];
+                    return x;
+                }
+                else
+                {
+                    //draw case
+                    return -1;
+                }
+                
             }
             iterator = false;
         }

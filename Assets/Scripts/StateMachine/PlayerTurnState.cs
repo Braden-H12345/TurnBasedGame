@@ -19,7 +19,6 @@ public class PlayerTurnState : TurnBasedState
     public override void Enter()
     {
         turnComplete = false;
-        Debug.Log("Player Turn: ...Entering");
         _playerTurnTextUI.gameObject.SetActive(true);
 
 
@@ -61,7 +60,6 @@ public class PlayerTurnState : TurnBasedState
 
         StateMachine.Input.PressedWin -= OnPressedWin;
         StateMachine.Input.PressedLose -= OnPressedLose;
-        Debug.Log("Player Turn: Exiting...");
 
     }
 
