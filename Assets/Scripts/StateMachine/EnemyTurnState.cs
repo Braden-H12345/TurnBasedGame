@@ -10,7 +10,7 @@ public class EnemyTurnState : TurnBasedState
 
     [SerializeField] float _pauseDuration = 1.5f;
     [SerializeField] GameObject _enemyPiece;
-
+    [SerializeField] AudioClip _pieceDropSound;
 
     GameObject tempPiece = null;
 
@@ -95,6 +95,7 @@ public class EnemyTurnState : TurnBasedState
 
         if (foundFreeCell)
         {
+            Feedback();
             // Instantiate a new Piece, disable the temporary
             GameObject _piece = Instantiate(_pieceToMove);
             tempPiece.GetComponent<Renderer>().enabled = false;
@@ -115,8 +116,7 @@ public class EnemyTurnState : TurnBasedState
             // remove the temporary gameobject
             DestroyImmediate(tempPiece);
 
-            bool win = false;
-            win = CheckWin(2, SetupState.Board);
+            bool win = CheckWin(2, SetupState.Board);
             if (win)
             {
                 OnPressedLose();
@@ -193,6 +193,15 @@ public class EnemyTurnState : TurnBasedState
 
 
         return false;
+    }
+
+    private void Feedback()
+    {
+
+        if (_pieceDropSound != null)
+        {
+            AudioHelper.PlayClip2D(_pieceDropSound, 1f);
+        }
     }
 
 

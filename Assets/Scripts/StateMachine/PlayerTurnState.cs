@@ -7,6 +7,7 @@ public class PlayerTurnState : TurnBasedState
 {
 
     [SerializeField] GameObject _playerPiece;
+    [SerializeField] AudioClip _pieceDropSound;
 
     bool turnComplete = false;
 
@@ -42,6 +43,7 @@ public class PlayerTurnState : TurnBasedState
             // click the left mouse button to drop the piece into the selected column
             if (Input.GetMouseButtonDown(0))
             {
+                Feedback();
                 StartCoroutine(TakeMove(tempPiece));
             }
 
@@ -131,8 +133,7 @@ public class PlayerTurnState : TurnBasedState
             // remove the temporary gameobject
             DestroyImmediate(tempPiece);
 
-            bool win = false;
-            win = CheckWin(1, SetupState.Board);
+            bool win = CheckWin(1, SetupState.Board);
             if(win)
             {
                 OnPressedWin();
@@ -192,6 +193,15 @@ public class PlayerTurnState : TurnBasedState
 
 
         return false;
+    }
+
+    private void Feedback()
+    {
+
+        if (_pieceDropSound != null)
+        {
+            AudioHelper.PlayClip2D(_pieceDropSound, 1f);
+        }
     }
 
     public List<int> CalculateMoves()
